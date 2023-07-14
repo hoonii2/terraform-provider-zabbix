@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/tpretz/go-zabbix-api"
+	"github.com/kgeroczi/go-zabbix-api"
 )
 
 // Provider definition
@@ -15,17 +15,27 @@ func Provider() *schema.Provider {
 		Schema: map[string]*schema.Schema{
 			"username": &schema.Schema{
 				Type:         schema.TypeString,
-				Required:     true,
+				Required:     false,
+				Optional:     true,
 				Description:  "Zabbix API username",
 				ValidateFunc: validation.StringIsNotWhiteSpace,
 				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ZABBIX_USER", "ZABBIX_USERNAME"}, nil),
 			},
 			"password": &schema.Schema{
 				Type:         schema.TypeString,
-				Required:     true,
+				Required:     false,
+				Optional:     true,
 				Description:  "Zabbix API password",
 				ValidateFunc: validation.StringIsNotWhiteSpace,
 				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ZABBIX_PASS", "ZABBIX_PASSWORD"}, nil),
+			},
+			"token": &schema.Schema{
+				Type:         schema.TypeString,
+				Required:     false,
+				Optional:     true,
+				Description:  "Zabbix API token",
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ZABBIX_TOKEN", "ZABBIX_API_TOKEN"}, nil),
 			},
 			"url": &schema.Schema{
 				Type:         schema.TypeString,
@@ -53,6 +63,7 @@ func Provider() *schema.Provider {
 			"zabbix_proxy":       dataProxy(),
 			"zabbix_hostgroup":   dataHostgroup(),
 			"zabbix_template":    dataTemplate(),
+			"zabbix_user":        dataUser(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"zabbix_trigger":       resourceTrigger(),
@@ -105,6 +116,8 @@ func Provider() *schema.Provider {
 			"zabbix_item_dependent":       resourceItemDependent(),
 			"zabbix_proto_item_dependent": resourceProtoItemDependent(),
 			"zabbix_lld_dependent":        resourceLLDDependent(),
+
+			"zabbix_user": resourceUser(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -125,7 +138,11 @@ func providerConfigure(d *schema.ResourceData) (meta interface{}, err error) {
 		return nil, apierr
 	}
 
-	_, err = api.Login(d.Get("username").(string), d.Get("password").(string))
+	if d.Get("token").(string) != "" {
+		_, err = api.Token(d.Get("token").(string))
+	} else {
+		_, err = api.Login(d.Get("username").(string), d.Get("password").(string))
+	}
 	meta = api
 	log.Trace("Started zabbix provider got error: %+v", err)
 
