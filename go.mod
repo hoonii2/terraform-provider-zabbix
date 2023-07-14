@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/hashicorp/terraform v0.12.23
 	github.com/hashicorp/terraform-plugin-sdk v1.7.0
-	github.com/kgeroczi/go-zabbix-api v0.1.0
+	github.com/kgeroczi/go-zabbix-api v0.1.1
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	github.com/hashicorp/go-plugin v1.0.1 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
-	github.com/hashicorp/go-version v1.2.0 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f // indirect
 	github.com/hashicorp/hcl/v2 v2.3.0 // indirect
