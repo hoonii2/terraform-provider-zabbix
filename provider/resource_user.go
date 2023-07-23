@@ -23,18 +23,54 @@ func resourceUser() *schema.Resource {
 			"username": &schema.Schema{
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsNotWhiteSpace,
-				Description:  "Username",
+				Description:  "User's name.",
 				Required:     true,
 			},
 			"password": &schema.Schema{
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsNotWhiteSpace,
-				Description:  "Password",
-				Required:     true,
+				Description:  "User's password.",
+				Optional:     true,
 				Sensitive:    true,
+			},
+			"roleid": &schema.Schema{
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+				Description:  "Role ID of the user.",
+				Required:     true,
+			},
+			"name": &schema.Schema{
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+				Description:  "Name of the user.",
+				Optional:     true,
+			},
+			"surname": &schema.Schema{
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+				Description:  "Surname of the user.",
+				Optional:     true,
+			},
+			"groups": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
 			},
 		},
 	}
+}
+
+func resourceUserGroupsV1(d *schema.ResourceData) []zabbix.UserGroupID {
+	rawGroups := d.Get("groups").(*schema.Set).List()
+	groups := make([]zabbix.UserGroupID, len(rawGroups))
+	for i, raw := range rawGroups {
+		groups[i] = zabbix.UserGroupID{
+			UserGroupID: raw.(string),
+		}
+	}
+	return groups
 }
 
 // dataUser terraform data handler
@@ -46,7 +82,7 @@ func dataUser() *schema.Resource {
 			"username": &schema.Schema{
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsNotWhiteSpace,
-				Description:  "Username",
+				Description:  "User's name.",
 				Required:     true,
 			},
 		},
@@ -60,6 +96,10 @@ func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
 	item := zabbix.User{
 		Username: d.Get("username").(string),
 		Password: d.Get("password").(string),
+		RoleID:   d.Get("roleid").(string),
+		Name:     d.Get("name").(string),
+		Surname:  d.Get("surname").(string),
+		Groups:   resourceUserGroupsV1(d),
 	}
 
 	items := []zabbix.User{item}
@@ -100,6 +140,9 @@ func userRead(d *schema.ResourceData, m interface{}, params zabbix.Params) error
 
 	d.SetId(t.UserID)
 	d.Set("username", t.Username)
+	d.Set("roleid", t.RoleID)
+	d.Set("name", t.Name)
+	d.Set("surname", t.Surname)
 
 	return nil
 }
@@ -108,7 +151,7 @@ func userRead(d *schema.ResourceData, m interface{}, params zabbix.Params) error
 func dataUserRead(d *schema.ResourceData, m interface{}) error {
 	return userRead(d, m, zabbix.Params{
 		"filter": map[string]interface{}{
-			"name": d.Get("name"),
+			"username": d.Get("username"),
 		},
 	})
 }
@@ -130,6 +173,10 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 		UserID:   d.Id(),
 		Username: d.Get("username").(string),
 		Password: d.Get("password").(string),
+		RoleID:   d.Get("roleid").(string),
+		Name:     d.Get("name").(string),
+		Surname:  d.Get("surname").(string),
+		Groups:   resourceUserGroupsV1(d),
 	}
 
 	items := []zabbix.User{item}

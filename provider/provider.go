@@ -9,6 +9,8 @@ import (
 	"github.com/kgeroczi/go-zabbix-api"
 )
 
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+
 // Provider definition
 func Provider() *schema.Provider {
 	return &schema.Provider{
@@ -117,7 +119,8 @@ func Provider() *schema.Provider {
 			"zabbix_proto_item_dependent": resourceProtoItemDependent(),
 			"zabbix_lld_dependent":        resourceLLDDependent(),
 
-			"zabbix_user": resourceUser(),
+			"zabbix_user":       resourceUser(),
+			"zabbix_user_group": resourceUserGroup(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
