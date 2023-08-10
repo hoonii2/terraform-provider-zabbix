@@ -9,21 +9,97 @@ import (
 	"github.com/kgeroczi/go-zabbix-api"
 )
 
-// proxySchemaBase base proxy schema
-var proxySchemaBase = map[string]*schema.Schema{
-	"host": &schema.Schema{
-		Type:         schema.TypeString,
-		Description:  "FQDN of proxy",
-		ValidateFunc: validation.StringIsNotWhiteSpace,
-		Required:     true,
-	},
+// resourceProxy terraform resource handler
+func resourceProxy() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceProxyCreate,
+		Read:   resourceProxyRead,
+		Update: resourceProxyUpdate,
+		Delete: resourceProxyDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
+		Schema: map[string]*schema.Schema{
+			"host": &schema.Schema{
+				Type:         schema.TypeString,
+				Description:  "Name of the proxy.",
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+				Required:     true,
+			},
+			"status": &schema.Schema{
+				Type:         schema.TypeInt,
+				Description:  "Type of proxy. Possible values: 5 - active proxy; 6 - passive proxy.",
+				ValidateFunc: validation.IntBetween(5, 6),
+				Required:     true,
+			},
+			"description": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Description of the proxy.",
+				//ValidateFunc: validation.StringIsNotWhiteSpace,
+				Optional: true,
+			},
+			"tls_connect": &schema.Schema{
+				Type:         schema.TypeInt,
+				Description:  "Connections to host.	Possible values: 1 - (default) No encryption; 2 - PSK; 4 - certificate.",
+				ValidateFunc: validation.IntBetween(1, 4),
+				Optional:     true,
+				Default:      1,
+			},
+			"tls_accept": &schema.Schema{
+				Type:         schema.TypeInt,
+				Description:  "Connections from host. This is a bitmask field, any combination of possible bitmap values is acceptable. Possible bitmap values: 1 - (default) No encryption; 2 - PSK; 4 - certificate.",
+				ValidateFunc: validation.IntBetween(1, 7),
+				Optional:     true,
+				Default:      1,
+			},
+			"tls_issuer": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Certificate issuer.",
+				//ValidateFunc: validation.StringIsNotWhiteSpace,
+				Optional: true,
+			},
+			"tls_subject": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Certificate subject.",
+				//ValidateFunc: validation.StringIsNotWhiteSpace,
+				Optional: true,
+			},
+			"tls_psk_identity": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "PSK identity. Do not put sensitive information in the PSK identity, it is transmitted unencrypted over the network to inform a receiver which PSK to use. Required if tls_connect is set to \"PSK\", or tls_accept contains the \"PSK\" bit.",
+				//ValidateFunc: validation.StringIsNotWhiteSpace,
+				Optional: true,
+			},
+			"tls_psk": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "The preshared key, at least 32 hex digits. Required if tls_connect is set to \"PSK\", or tls_accept contains the \"PSK\" bit.",
+				//ValidateFunc: validation.StringIsNotWhiteSpace,
+				Optional: true,
+			},
+			"proxy_address": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Comma-delimited IP addresses or DNS names of active Zabbix proxy.",
+				//ValidateFunc: validation.StringIsNotWhiteSpace,
+				Optional: true,
+			},
+		},
+	}
 }
 
-// dataProxy terraform proxy resource entrypoint
+// dataProxy terraform data handler
 func dataProxy() *schema.Resource {
 	return &schema.Resource{
-		Read:   dataProxyRead,
-		Schema: proxySchemaBase,
+		Read: dataProxyRead,
+
+		Schema: map[string]*schema.Schema{
+			"host": &schema.Schema{
+				Type:         schema.TypeString,
+				Description:  "Name of the proxy.",
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+				Required:     true,
+			},
+		},
 	}
 }
 
@@ -47,6 +123,39 @@ func dataProxyRead(d *schema.ResourceData, m interface{}) error {
 	log.Debug("performing data lookup with params: %#v", params)
 
 	return proxyRead(d, m, params)
+}
+
+// terraform proxy create function
+func resourceProxyCreate(d *schema.ResourceData, m interface{}) error {
+	api := m.(*zabbix.API)
+
+	proxy := zabbix.Proxy{
+		ProxyID:        d.Id(),
+		Host:           d.Get("host").(string),
+		Status:         d.Get("status").(int),
+		Description:    d.Get("description").(string),
+		TLSConnect:     d.Get("tls_connect").(int),
+		TLSAccept:      d.Get("tls_accept").(int),
+		TLSIssuer:      d.Get("tls_issuer").(string),
+		TLSSubject:     d.Get("tls_subject").(string),
+		TLSPSKIdentity: d.Get("tls_psk_identity").(string),
+		TLSPSK:         d.Get("tls_psk").(string),
+		ProxyAddress:   d.Get("proxy_address").(string),
+	}
+
+	proxies := []zabbix.Proxy{proxy}
+
+	err := api.ProxiesCreate(proxies)
+
+	if err != nil {
+		return err
+	}
+
+	log.Trace("created Proxy: %+v", proxies[0])
+
+	d.SetId(proxies[0].ProxyID)
+
+	return resourceProxyRead(d, m)
 }
 
 // proxyRead common proxy read function
@@ -74,6 +183,59 @@ func proxyRead(d *schema.ResourceData, m interface{}, params zabbix.Params) erro
 
 	d.SetId(proxy.ProxyID)
 	d.Set("host", proxy.Host)
+	d.Set("status", proxy.Status)
+	d.Set("description", proxy.Description)
+	d.Set("tls_connect", proxy.TLSConnect)
+	d.Set("tls_accept", proxy.TLSAccept)
+	d.Set("tls_issuer", proxy.TLSIssuer)
+	d.Set("tls_subject", proxy.TLSSubject)
+	d.Set("tls_psk_identity", proxy.TLSPSKIdentity)
+	d.Set("tls_psk", proxy.TLSPSK)
+	d.Set("proxy_address", proxy.ProxyAddress)
 
 	return nil
+}
+
+// resourceProxyRead terraform resource read handler
+func resourceProxyRead(d *schema.ResourceData, m interface{}) error {
+	log.Debug("Lookup of Proxy with id %s", d.Id())
+
+	return proxyRead(d, m, zabbix.Params{
+		"proxyids": d.Id(),
+	})
+}
+
+// resourceProxyUpdate terraform resource update handler
+func resourceProxyUpdate(d *schema.ResourceData, m interface{}) error {
+	api := m.(*zabbix.API)
+
+	proxy := zabbix.Proxy{
+		ProxyID:        d.Id(),
+		Host:           d.Get("host").(string),
+		Status:         d.Get("status").(int),
+		Description:    d.Get("description").(string),
+		TLSConnect:     d.Get("tls_connect").(int),
+		TLSAccept:      d.Get("tls_accept").(int),
+		TLSIssuer:      d.Get("tls_issuer").(string),
+		TLSSubject:     d.Get("tls_subject").(string),
+		TLSPSKIdentity: d.Get("tls_psk_identity").(string),
+		TLSPSK:         d.Get("tls_psk").(string),
+		ProxyAddress:   d.Get("proxy_address").(string),
+	}
+
+	proxies := []zabbix.Proxy{proxy}
+
+	err := api.ProxiesUpdate(proxies)
+
+	if err != nil {
+		return err
+	}
+
+	return resourceProxyRead(d, m)
+}
+
+// resourceProxyDelete terraform resource delete handler
+func resourceProxyDelete(d *schema.ResourceData, m interface{}) error {
+	api := m.(*zabbix.API)
+	return api.ProxiesDeleteByIds([]string{d.Id()})
 }

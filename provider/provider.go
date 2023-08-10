@@ -121,6 +121,8 @@ func Provider() *schema.Provider {
 
 			"zabbix_user":       resourceUser(),
 			"zabbix_user_group": resourceUserGroup(),
+
+			"zabbix_proxy": resourceProxy(),
 		},
 		ConfigureFunc: providerConfigure,
 	}

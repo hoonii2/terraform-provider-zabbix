@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/hashicorp/terraform v0.12.23
 	github.com/hashicorp/terraform-plugin-sdk v1.7.0
-	github.com/kgeroczi/go-zabbix-api v0.1.2
+	github.com/kgeroczi/go-zabbix-api v0.1.3
 )
 
 require (
