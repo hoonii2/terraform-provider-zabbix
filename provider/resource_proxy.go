@@ -21,16 +21,16 @@ func resourceProxy() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"host": &schema.Schema{
+			"name": &schema.Schema{
 				Type:         schema.TypeString,
 				Description:  "Name of the proxy.",
 				ValidateFunc: validation.StringIsNotWhiteSpace,
 				Required:     true,
 			},
-			"status": &schema.Schema{
+			"operating_mode": &schema.Schema{
 				Type:         schema.TypeInt,
-				Description:  "Type of proxy. Possible values: 5 - active proxy; 6 - passive proxy.",
-				ValidateFunc: validation.IntBetween(5, 6),
+				Description:  "Type of proxy. Possible values: 0 - active proxy; 1 - passive proxy.",
+				ValidateFunc: validation.IntBetween(0, 1),
 				Required:     true,
 			},
 			"description": &schema.Schema{
@@ -93,7 +93,7 @@ func dataProxy() *schema.Resource {
 		Read: dataProxyRead,
 
 		Schema: map[string]*schema.Schema{
-			"host": &schema.Schema{
+			"name": &schema.Schema{
 				Type:         schema.TypeString,
 				Description:  "Name of the proxy.",
 				ValidateFunc: validation.StringIsNotWhiteSpace,
@@ -106,11 +106,11 @@ func dataProxy() *schema.Resource {
 // dataProxyRead read handler for data resource
 func dataProxyRead(d *schema.ResourceData, m interface{}) error {
 	params := zabbix.Params{
-		"selectInterface": "extend",
-		"filter":          map[string]interface{}{},
+		//"selectInterface": "extend",
+		"filter": map[string]interface{}{},
 	}
 
-	lookups := []string{"host"}
+	lookups := []string{"name"}
 	for _, k := range lookups {
 		if v, ok := d.GetOk(k); ok {
 			params["filter"].(map[string]interface{})[k] = v
@@ -131,8 +131,8 @@ func resourceProxyCreate(d *schema.ResourceData, m interface{}) error {
 
 	proxy := zabbix.Proxy{
 		ProxyID:        d.Id(),
-		Host:           d.Get("host").(string),
-		Status:         d.Get("status").(int),
+		Name:           d.Get("name").(string),
+		OperatingMode:  d.Get("operating_mode").(int),
 		Description:    d.Get("description").(string),
 		TLSConnect:     d.Get("tls_connect").(int),
 		TLSAccept:      d.Get("tls_accept").(int),
@@ -182,8 +182,8 @@ func proxyRead(d *schema.ResourceData, m interface{}, params zabbix.Params) erro
 	log.Debug("Got proxy: %+v", proxy)
 
 	d.SetId(proxy.ProxyID)
-	d.Set("host", proxy.Host)
-	d.Set("status", proxy.Status)
+	d.Set("name", proxy.Name)
+	d.Set("operating_mode", proxy.OperatingMode)
 	d.Set("description", proxy.Description)
 	d.Set("tls_connect", proxy.TLSConnect)
 	d.Set("tls_accept", proxy.TLSAccept)
@@ -211,8 +211,8 @@ func resourceProxyUpdate(d *schema.ResourceData, m interface{}) error {
 
 	proxy := zabbix.Proxy{
 		ProxyID:        d.Id(),
-		Host:           d.Get("host").(string),
-		Status:         d.Get("status").(int),
+		Name:           d.Get("name").(string),
+		OperatingMode:  d.Get("operating_mode").(int),
 		Description:    d.Get("description").(string),
 		TLSConnect:     d.Get("tls_connect").(int),
 		TLSAccept:      d.Get("tls_accept").(int),
