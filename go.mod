@@ -1,4 +1,4 @@
-module github.com/kgeroczi/terraform-provider-zabbix
+module github.com/hoonii2/terraform-provider-zabbix
 
 go 1.23.0
 
@@ -7,7 +7,7 @@ toolchain go1.23.3
 require (
 	github.com/hashicorp/terraform v0.12.23
 	github.com/hashicorp/terraform-plugin-sdk v1.17.2
-	github.com/kgeroczi/go-zabbix-api v0.2.1
+	github.com/hoonii2/go-zabbix-api v0.2.1
 )
 
 require (
@@ -121,4 +121,4 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 )
 
-//replace github.com/kgeroczi/go-zabbix-api => ../go-zabbix-api
+//replace github.com/hoonii2/go-zabbix-api => ../go-zabbix-api

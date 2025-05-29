@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/kgeroczi/go-zabbix-api"
+	"github.com/hoonii2/go-zabbix-api"
 )
 
 // template resource function
